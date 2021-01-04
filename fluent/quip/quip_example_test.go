@@ -11,32 +11,19 @@ import (
 
 func Example() {
 	nb := basicnode.Prototype.Any.NewBuilder()
-	var err error
-	quip.BuildMap(&err, nb, 4, func(ma ipld.MapAssembler) {
-		quip.MapEntry(&err, ma, "some key", func(va ipld.NodeAssembler) {
-			quip.AbsorbError(&err, va.AssignString("some value"))
-		})
-		quip.MapEntry(&err, ma, "another key", func(va ipld.NodeAssembler) {
-			quip.AbsorbError(&err, va.AssignString("another value"))
-		})
-		quip.MapEntry(&err, ma, "nested map", func(va ipld.NodeAssembler) {
-			quip.BuildMap(&err, va, 2, func(ma ipld.MapAssembler) {
-				quip.MapEntry(&err, ma, "deeper entries", func(va ipld.NodeAssembler) {
-					quip.AbsorbError(&err, va.AssignString("deeper values"))
-				})
-				quip.MapEntry(&err, ma, "more deeper entries", func(va ipld.NodeAssembler) {
-					quip.AbsorbError(&err, va.AssignString("more deeper values"))
-				})
+	err := quip.BuildMap(nb, 4, func(ma ipld.MapAssembler) {
+		quip.MapEntry(ma, "some key", quip.AssignString("some value"))
+		quip.MapEntry(ma, "another key", quip.AssignString("another value"))
+		quip.MapEntry(ma, "nested map", func(va ipld.NodeAssembler) {
+			quip.Map(va, 2, func(ma ipld.MapAssembler) {
+				quip.MapEntry(ma, "deeper entries", quip.AssignString("deeper values"))
+				quip.MapEntry(ma, "more deeper entries", quip.AssignString("more deeper values"))
 			})
 		})
-		quip.MapEntry(&err, ma, "nested list", func(va ipld.NodeAssembler) {
-			quip.BuildList(&err, va, 2, func(la ipld.ListAssembler) {
-				quip.ListEntry(&err, la, func(va ipld.NodeAssembler) {
-					quip.AbsorbError(&err, va.AssignInt(1))
-				})
-				quip.ListEntry(&err, la, func(va ipld.NodeAssembler) {
-					quip.AbsorbError(&err, va.AssignInt(2))
-				})
+		quip.MapEntry(ma, "nested list", func(va ipld.NodeAssembler) {
+			quip.List(va, 2, func(la ipld.ListAssembler) {
+				quip.ListEntry(la, quip.AssignInt(1))
+				quip.ListEntry(la, quip.AssignInt(2))
 			})
 		})
 	})

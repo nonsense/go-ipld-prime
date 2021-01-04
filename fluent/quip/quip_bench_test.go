@@ -12,6 +12,8 @@ import (
 )
 
 func BenchmarkQuip(b *testing.B) {
+	b.ReportAllocs()
+
 	var n ipld.Node
 	var err error
 	for i := 0; i < b.N; i++ {
@@ -200,9 +202,9 @@ func fab() (ipld.Node, error) {
 	return nb.Build(), nil
 }
 
-func f1() (_ ipld.Node, err error) {
+func f1() (ipld.Node, error) {
 	nb := basicnode.Prototype.Any.NewBuilder()
-	quip.BuildList(&err, nb, -1, func(la ipld.ListAssembler) {
+	err := quip.BuildList(nb, -1, func(la ipld.ListAssembler) {
 		f2(la.AssembleValue(),
 			"/",
 			"overlay",
@@ -220,26 +222,17 @@ func f1() (_ ipld.Node, err error) {
 	return nb.Build(), nil
 }
 
-func f2(na ipld.NodeAssembler, a string, b string, c string, d []string) (err error) {
-	quip.BuildMap(&err, na, 4, func(ma ipld.MapAssembler) {
-		quip.MapEntry(&err, ma, "destination", func(va ipld.NodeAssembler) {
-			quip.AbsorbError(&err, va.AssignString(a))
-		})
-		quip.MapEntry(&err, ma, "type", func(va ipld.NodeAssembler) {
-			quip.AbsorbError(&err, va.AssignString(b))
-		})
-		quip.MapEntry(&err, ma, "source", func(va ipld.NodeAssembler) {
-			quip.AbsorbError(&err, va.AssignString(c))
-		})
-		quip.MapEntry(&err, ma, "options", func(va ipld.NodeAssembler) {
-			quip.BuildList(&err, va, int64(len(d)), func(la ipld.ListAssembler) {
-				for i := range d {
-					quip.ListEntry(&err, la, func(va ipld.NodeAssembler) {
-						quip.AbsorbError(&err, va.AssignString(d[i]))
-					})
+func f2(na ipld.NodeAssembler, a string, b string, c string, d []string) error {
+	return quip.BuildMap(na, 4, func(ma ipld.MapAssembler) {
+		quip.MapEntry(ma, "destination", quip.AssignString(a))
+		quip.MapEntry(ma, "type", quip.AssignString(b))
+		quip.MapEntry(ma, "source", quip.AssignString(c))
+		quip.MapEntry(ma, "options", func(va ipld.NodeAssembler) {
+			quip.List(va, int64(len(d)), func(la ipld.ListAssembler) {
+				for _, s := range d {
+					quip.ListEntry(la, quip.AssignString(s))
 				}
 			})
 		})
 	})
-	return
 }

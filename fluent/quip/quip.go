@@ -40,88 +40,81 @@ import (
 //    - there's also generally a whole `quip.MapEntry(... {...})` or `ListEntry` clause around *that*, with the single Absorb+Assign line in the middle.  that's boilerplate that needs trimming as well.
 //      - so... twice as many Assign helpers, because it's kinda necessary to specialize them to map and list assemblers too?  uff.
 
-func AbsorbError(e *error, err error) {
-	if *e != nil {
-		return
-	}
-	if err != nil {
-		*e = err
-	}
-}
-
-func BeginMap(e *error, na ipld.NodeAssembler, sizeHint int64) ipld.MapAssembler {
-	if *e != nil {
-		return nil
-	}
+func BeginMap(na ipld.NodeAssembler, sizeHint int64) ipld.MapAssembler {
 	ma, err := na.BeginMap(sizeHint)
 	if err != nil {
-		*e = err
-		return nil
+		panic(err)
 	}
 	return ma
 }
 
-func BuildMap(e *error, na ipld.NodeAssembler, sizeHint int64, fn func(ma ipld.MapAssembler)) {
-	if *e != nil {
-		return
-	}
-	ma, err := na.BeginMap(sizeHint)
-	if err != nil {
-		*e = err
-		return
-	}
-	fn(ma)
-	*e = ma.Finish()
+func BuildMap(na ipld.NodeAssembler, sizeHint int64, fn func(ma ipld.MapAssembler)) (err error) {
+	// TODO(mvdan): if the call stack contains another quip helper, panic
+	// immediately, to prevent incorrectly using BuildMap instead of Map.
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+	Map(na, sizeHint, fn)
+	return nil
 }
 
-func MapEntry(e *error, ma ipld.MapAssembler, k string, fn func(va ipld.NodeAssembler)) {
-	if *e != nil {
-		return
+func Map(na ipld.NodeAssembler, sizeHint int64, fn func(ma ipld.MapAssembler)) {
+	ma, err := na.BeginMap(sizeHint)
+	if err != nil {
+		panic(err)
 	}
+	fn(ma)
+	err = ma.Finish()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func MapEntry(ma ipld.MapAssembler, k string, fn func(va ipld.NodeAssembler)) {
 	va, err := ma.AssembleEntry(k)
 	if err != nil {
-		*e = err
-		return
+		panic(err)
 	}
 	fn(va)
 }
 
-func BeginList(e *error, na ipld.NodeAssembler, sizeHint int64) ipld.ListAssembler {
-	if *e != nil {
-		return nil
-	}
+func BeginList(na ipld.NodeAssembler, sizeHint int64) ipld.ListAssembler {
 	la, err := na.BeginList(sizeHint)
 	if err != nil {
-		*e = err
-		return nil
+		panic(err)
 	}
 	return la
 }
 
-func BuildList(e *error, na ipld.NodeAssembler, sizeHint int64, fn func(la ipld.ListAssembler)) {
-	if *e != nil {
-		return
-	}
-	la, err := na.BeginList(sizeHint)
-	if err != nil {
-		*e = err
-		return
-	}
-	fn(la)
-	*e = la.Finish()
+func BuildList(na ipld.NodeAssembler, sizeHint int64, fn func(la ipld.ListAssembler)) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+	List(na, sizeHint, fn)
+	return nil
 }
 
-func ListEntry(e *error, la ipld.ListAssembler, fn func(va ipld.NodeAssembler)) {
-	if *e != nil {
-		return
+func List(na ipld.NodeAssembler, sizeHint int64, fn func(la ipld.ListAssembler)) {
+	la, err := na.BeginList(sizeHint)
+	if err != nil {
+		panic(err)
 	}
+	fn(la)
+	err = la.Finish()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ListEntry(la ipld.ListAssembler, fn func(va ipld.NodeAssembler)) {
 	fn(la.AssembleValue())
 }
 
-func CopyRange(e *error, la ipld.ListAssembler, src ipld.Node, start, end int64) {
-	if *e != nil {
-		return
-	}
+func CopyRange(la ipld.ListAssembler, src ipld.Node, start, end int64) {
 	if start >= src.Length() {
 		return
 	}
@@ -134,13 +127,34 @@ func CopyRange(e *error, la ipld.ListAssembler, src ipld.Node, start, end int64)
 	for i := start; i < end; i++ {
 		n, err := src.LookupByIndex(i)
 		if err != nil {
-			*e = err
-			return
+			panic(err)
 		}
 		if err := la.AssembleValue().AssignNode(n); err != nil {
-			*e = err
-			return
+			panic(err)
 		}
 	}
-	return
+}
+
+type String string
+
+func (s String) Assign(va ipld.NodeAssembler) {
+	if err := va.AssignString(string(s)); err != nil {
+		panic(err)
+	}
+}
+
+func AssignString(s string) func(ipld.NodeAssembler) {
+	return String(s).Assign
+}
+
+type Int int64
+
+func (s Int) Assign(va ipld.NodeAssembler) {
+	if err := va.AssignInt(int64(s)); err != nil {
+		panic(err)
+	}
+}
+
+func AssignInt(i int64) func(ipld.NodeAssembler) {
+	return Int(i).Assign
 }
