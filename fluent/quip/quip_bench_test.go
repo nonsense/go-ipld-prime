@@ -227,12 +227,10 @@ func f2(na ipld.NodeAssembler, a string, b string, c string, d []string) error {
 		quip.MapEntry(ma, "destination", quip.AssignString(a))
 		quip.MapEntry(ma, "type", quip.AssignString(b))
 		quip.MapEntry(ma, "source", quip.AssignString(c))
-		quip.MapEntry(ma, "options", func(va ipld.NodeAssembler) {
-			quip.List(va, int64(len(d)), func(la ipld.ListAssembler) {
-				for _, s := range d {
-					quip.ListEntry(la, quip.AssignString(s))
-				}
-			})
-		})
+		quip.MapEntry(ma, "options", quip.List(int64(len(d)), func(la ipld.ListAssembler) {
+			for _, s := range d {
+				quip.ListEntry(la, quip.AssignString(s))
+			}
+		}))
 	})
 }

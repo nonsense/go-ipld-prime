@@ -14,18 +14,14 @@ func Example() {
 	err := quip.BuildMap(nb, 4, func(ma ipld.MapAssembler) {
 		quip.MapEntry(ma, "some key", quip.AssignString("some value"))
 		quip.MapEntry(ma, "another key", quip.AssignString("another value"))
-		quip.MapEntry(ma, "nested map", func(va ipld.NodeAssembler) {
-			quip.Map(va, 2, func(ma ipld.MapAssembler) {
-				quip.MapEntry(ma, "deeper entries", quip.AssignString("deeper values"))
-				quip.MapEntry(ma, "more deeper entries", quip.AssignString("more deeper values"))
-			})
-		})
-		quip.MapEntry(ma, "nested list", func(va ipld.NodeAssembler) {
-			quip.List(va, 2, func(la ipld.ListAssembler) {
-				quip.ListEntry(la, quip.AssignInt(1))
-				quip.ListEntry(la, quip.AssignInt(2))
-			})
-		})
+		quip.MapEntry(ma, "nested map", quip.Map(2, func(ma ipld.MapAssembler) {
+			quip.MapEntry(ma, "deeper entries", quip.AssignString("deeper values"))
+			quip.MapEntry(ma, "more deeper entries", quip.AssignString("more deeper values"))
+		}))
+		quip.MapEntry(ma, "nested list", quip.List(2, func(la ipld.ListAssembler) {
+			quip.ListEntry(la, quip.AssignInt(1))
+			quip.ListEntry(la, quip.AssignInt(2))
+		}))
 	})
 	if err != nil {
 		panic(err)
