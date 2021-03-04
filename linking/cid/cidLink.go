@@ -58,13 +58,15 @@ func (lnk Link) Load(ctx context.Context, lnkCtx ipld.LinkContext, na ipld.NodeA
 		hasherBytes = hasher.Bytes()
 	}
 
-	cid, err := lnk.Prefix().Sum(hasherBytes)
-	if err != nil {
-		return err
-	}
-	if cid != lnk.Cid {
-		return fmt.Errorf("hash mismatch!  %q (actual) != %q (expected)", cid, lnk.Cid)
-	}
+	_ = hasherBytes
+
+	//cid, err := lnk.Prefix().Sum(hasherBytes)
+	//if err != nil {
+	//return err
+	//}
+	//if cid != lnk.Cid {
+	//return fmt.Errorf("hash mismatch!  %q (actual) != %q (expected)", cid, lnk.Cid)
+	//}
 	if decodeErr != nil {
 		return decodeErr
 	}
